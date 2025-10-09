@@ -41,7 +41,7 @@ exports.login = async (req, res) => {
     );
 
     if (users.length === 0) {
-      // Usar bcrypt mesmo quando usuário não existe (previne timing attacks)
+      // Usar bcrypt mesmo quando usuário não existe
       await bcrypt.hash('dummy', 12);
       return res.status(401).json({ error: 'Email ou senha incorretos' });
     }

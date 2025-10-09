@@ -50,7 +50,6 @@ app.get('/', (req, res) => {
   });
 });
 
-// Middleware de erro global
 app.use((err, req, res, next) => {
   console.error('Erro:', err);
   
