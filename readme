@@ -1,0 +1,292 @@
+# 💰 Sistema de Controle de Finanças Pessoais
+
+Sistema web completo para gerenciamento de finanças pessoais, permitindo registro de receitas e despesas, anexo de cupons fiscais, visualização de saldo e histórico financeiro.
+
+---
+
+## 📝 Descrição
+
+Sistema desenvolvido para controle financeiro pessoal que permite aos usuários:
+- Criar conta e fazer login de forma segura
+- Registrar receitas e despesas por categoria
+- Anexar cupons fiscais em PDF
+- Visualizar saldo atual, total de receitas e despesas
+- Consultar histórico completo de transações
+- Excluir transações
+
+O sistema foi desenvolvido com foco em **segurança**, implementando proteções contra as principais vulnerabilidades web.
+
+---
+
+## 🚀 Tecnologias Utilizadas
+
+### Backend
+- **Node.js** v14+ - Runtime JavaScript
+- **Express.js** v4.18 - Framework web
+- **MySQL2** v3.6 - Banco de dados com suporte a Promises
+- **bcrypt** v5.1 - Hash de senhas
+- **express-validator** v7.0 - Validação de dados
+- **helmet** v7.1 - Proteção de headers HTTP
+- **express-rate-limit** v7.1 - Limitação de requisições
+- **xss-clean** v0.1 - Proteção contra XSS
+- **hpp** v0.2 - Proteção contra HTTP Parameter Pollution
+- **multer** v1.4 - Upload de arquivos
+- **dotenv** v16.3 - Variáveis de ambiente
+
+### Frontend
+- **React** v18 - Biblioteca JavaScript
+- **Tailwind CSS** v3.4 - Framework CSS
+- **Lucide React** - Ícones
+
+### Banco de Dados
+- **MySQL** v8.0+ - Sistema de gerenciamento de banco de dados
+
+---
+
+## ✨ Funcionalidades
+
+- ✅ Cadastro e login de usuários
+- ✅ Adicionar receitas (Salário, Freelance, Investimentos, Outros)
+- ✅ Adicionar despesas (Alimentação, Transporte, Moradia, Lazer, Saúde, Educação, Outros)
+- ✅ Upload de cupom fiscal (PDF, máx 5MB)
+- ✅ Visualização de saldo total
+- ✅ Histórico de transações ordenado por data
+- ✅ Exclusão de transações
+- ✅ Estatísticas em tempo real
+
+---
+
+## 🔒 Segurança
+
+O sistema implementa proteções contra as seguintes vulnerabilidades:
+
+### 1. SQL Injection ✅
+**Proteção:** Queries parametrizadas em 100% das consultas
+
+```javascript
+// ❌ VULNERÁVEL
+db.query(`SELECT * FROM usuarios WHERE email = '${email}'`)
+
+// ✅ IMPLEMENTADO
+const [users] = await db.query(
+  'SELECT * FROM usuarios WHERE email = ?',
+  [email]
+);
+```
+
+### 2. Cross-Site Scripting (XSS) ✅
+**Proteção:** Sanitização de inputs + Helmet + CSP
+
+```javascript
+// Middleware de sanitização
+const sanitizeInput = (req, res, next) => {
+  Object.keys(req.body).forEach(key => {
+    if (typeof req.body[key] === 'string') {
+      req.body[key] = req.body[key]
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/<[^>]*>/g, '')
+        .trim();
+    }
+  });
+  next();
+};
+```
+
+### 3. Cross-Site Request Forgery (CSRF) ✅
+**Proteção:** CORS restrito + Validação de origem
+
+```javascript
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE']
+}));
+```
+
+### 4. Mass Assignment ✅
+**Proteção:** Whitelist de campos permitidos
+
+```javascript
+const allowFields = (allowedFields) => {
+  return (req, res, next) => {
+    const filteredBody = {};
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        filteredBody[field] = req.body[field];
+      }
+    });
+    req.body = filteredBody;
+    next();
+  };
+};
+```
+
+### 5. Session Hijacking ✅
+**Proteção:** Rate limiting + Bcrypt forte
+
+```javascript
+// Rate limiting
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // 5 tentativas
+});
+
+// Hash forte
+const hashedPassword = await bcrypt.hash(password, 12);
+```
+
+### 6. Hardcoded SQL ✅
+**Proteção:** 0% de SQL hardcoded - 100% parametrizado
+
+Todas as queries usam prepared statements com placeholders.
+
+---
+
+## 📦 Instalação
+
+### Pré-requisitos
+1. **Node.js** (v14+) - https://nodejs.org/
+2. **XAMPP** - https://www.apachefriends.org/
+
+### Passo 1: Configurar Banco de Dados
+
+1. Inicie o **XAMPP** e ligue o **MySQL**
+2. Acesse http://localhost/phpmyadmin
+3. Crie o banco `banco_padaria`
+4. Execute o script `database.sql`
+
+### Passo 2: Backend
+
+```bash
+cd backend
+npm install express mysql2 cors bcrypt multer express-validator helmet express-rate-limit xss-clean hpp cookie-parser dotenv
+copy .env.example .env
+#edita o env com as credenciaisi
+npm start
+```
+
+### Passo 3: Frontend
+
+```bash
+cd frontend
+npm install
+npm install -D tailwindcss@3.4.1 postcss autoprefixer
+npm install lucide-react
+npx tailwindcss init -p
+npm start
+```
+
+---
+
+## 🚀 Como Executar
+
+### Iniciar Backend
+```bash
+cd backend
+npm start
+# Servidor: http://localhost:3001
+```
+
+### Iniciar Frontend
+```bash
+cd frontend
+npm start
+# Aplicação: http://localhost:3000
+```
+
+---
+
+## 📁 Estrutura do Projeto
+
+```
+finance-control/
+├── backend/
+│   ├── src/
+│   │   ├── config/
+│   │   │   └── database.js
+│   │   ├── controllers/
+│   │   │   ├── authController.js
+│   │   │   └── transactionController.js
+│   │   ├── routes/
+│   │   │   ├── authRoutes.js
+│   │   │   └── transactionRoutes.js
+│   │   ├── middleware/
+│   │   │   ├── uploadMiddleware.js
+│   │   │   ├── validationMiddleware.js
+│   │   │   └── securityMiddleware.js
+│   │   └── app.js
+│   ├── uploads/
+│   ├── server.js
+│   ├── package.json
+│   └── .env
+├── frontend/
+│   ├── src/
+│   │   ├── App.js
+│   │   └── index.css
+│   └── package.json
+└── database.sql
+```
+
+---
+
+## 🔌 API Endpoints
+
+### POST `/api/register`
+Cadastrar usuário
+```json
+{
+  "name": "João Silva",
+  "email": "joao@email.com",
+  "password": "Senha123"
+}
+```
+
+### POST `/api/login`
+Fazer login
+```json
+{
+  "email": "joao@email.com",
+  "password": "Senha123"
+}
+```
+
+### POST `/api/transactions`
+Criar transação (multipart/form-data)
+
+### GET `/api/transactions/:userId`
+Listar transações
+
+### DELETE `/api/transactions/:id`
+Deletar transação
+
+### GET `/api/stats/:userId`
+Obter estatísticas
+
+---
+
+## 🧪 Testando a Segurança
+
+### SQL Injection
+```bash
+# Email: admin' OR '1'='1
+# Resultado: ❌ Bloqueado
+```
+
+### XSS
+```bash
+# Descrição: <script>alert('XSS')</script>
+# Resultado: ✅ Script removido
+```
+
+### Mass Assignment
+```json
+{
+  "name": "Test",
+  "email": "test@test.com",
+  "password": "123456",
+  "admin": true
+}
+// Resultado: ✅ Campo 'admin' ignorado
+```
+
+
