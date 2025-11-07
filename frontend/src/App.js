@@ -3,6 +3,51 @@ import { Plus, DollarSign, TrendingUp, TrendingDown, FileText, LogOut, User, Mai
 
 const API_URL = 'http://localhost:3001/api';
 
+// ✅ Gerenciador de CSRF Token
+let csrfToken = null;
+const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+
+const getCsrfToken = async () => {
+  try {
+    const response = await fetch(`${API_URL}/csrf-token`, {
+      headers: { 'X-Session-Id': sessionId }
+    });
+    const data = await response.json();
+    csrfToken = data.csrfToken;
+    return csrfToken;
+  } catch (error) {
+    console.error('Erro ao obter CSRF token:', error);
+    return null;
+  }
+};
+
+// ✅ Wrapper para fetch com CSRF
+const apiRequest = async (endpoint, options = {}) => {
+  if (!csrfToken) await getCsrfToken();
+
+  const headers = {
+    'X-Session-Id': sessionId,
+    'X-CSRF-Token': csrfToken,
+    ...options.headers
+  };
+
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
+    headers
+  });
+
+  // Atualizar token após cada requisição
+  if (response.headers.get('X-CSRF-Token')) {
+    csrfToken = response.headers.get('X-CSRF-Token');
+  }
+
+  return response;
+};
+
 const HomePage = ({ setPage }) => (
   <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center p-4">
     <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
@@ -402,6 +447,11 @@ const FinanceSystem = () => {
     despesa: ['Alimentação', 'Transporte', 'Moradia', 'Lazer', 'Saúde', 'Educação', 'Outros']
   };
 
+  // ✅ Obter token CSRF ao carregar
+  useEffect(() => {
+    getCsrfToken();
+  }, []);
+
   useEffect(() => {
     if (user) {
       loadTransactions();
@@ -411,7 +461,7 @@ const FinanceSystem = () => {
 
   const loadTransactions = async () => {
     try {
-      const response = await fetch(`${API_URL}/transactions/${user.id}`);
+      const response = await apiRequest(`/transactions/${user.id}`, { method: 'GET' });
       const data = await response.json();
       setTransactions(data);
     } catch (error) {
@@ -421,7 +471,7 @@ const FinanceSystem = () => {
 
   const loadStats = async () => {
     try {
-      const response = await fetch(`${API_URL}/stats/${user.id}`);
+      const response = await apiRequest(`/stats/${user.id}`, { method: 'GET' });
       const data = await response.json();
       setStats(data);
     } catch (error) {
@@ -437,9 +487,8 @@ const FinanceSystem = () => {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/login`, {
+      const response = await apiRequest('/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(loginForm)
       });
 
@@ -471,9 +520,8 @@ const FinanceSystem = () => {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/register`, {
+      const response = await apiRequest('/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: registerForm.name,
           email: registerForm.email,
@@ -516,7 +564,7 @@ const FinanceSystem = () => {
         formData.append('receipt', transactionForm.receipt);
       }
 
-      const response = await fetch(`${API_URL}/transactions`, {
+      const response = await apiRequest('/transactions', {
         method: 'POST',
         body: formData
       });
@@ -546,7 +594,7 @@ const FinanceSystem = () => {
     if (!window.confirm('Deseja realmente excluir esta transação?')) return;
 
     try {
-      const response = await fetch(`${API_URL}/transactions/${id}`, {
+      const response = await apiRequest(`/transactions/${id}`, {
         method: 'DELETE'
       });
 
